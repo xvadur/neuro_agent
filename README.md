@@ -8,13 +8,13 @@ This repository is the home of **Aethero_Xvadur**, a project dedicated to buildi
 
 ## 🚀 Current Phase
 
-**Genesis phase** — setting core structures and developer flow:
-
-- Project template defined
-- Naming conventions created
-- GitHub Project board active
-- Roadmap started → [`xvadur_genesis`]
-- Stack: `openai-cookbook` + `superagent` + `superagent-js`
+Genesis phase — setting core structures and developer flow:
+	•	Project template defined
+	•	Naming conventions created
+	•	GitHub Project board active
+	•	Roadmap started → [xvadur_genesis]
+	•	Core stack: openai-cookbook + superagent + superagent-js
+	•	First documentation milestones → [repositories_101], [nomenklatura]
 
 ---
 
