@@ -1,4 +1,4 @@
-# Aethero_Xvadur: An AI-First Operating System
+# Neuro_Agent
 
 > "The best way to predict the future is to invent it." — Alan Kay
 
