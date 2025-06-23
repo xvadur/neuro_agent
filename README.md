@@ -13,7 +13,7 @@ This repository is the home of **Aethero_Xvadur**, a project dedicated to buildi
 - Project template defined
 - Naming conventions created
 - GitHub Project board active
-- Roadmap started → [`xvadur_genesis`](link to issue)
+- Roadmap started → [`xvadur_genesis`]
 - Stack: `openai-cookbook` + `superagent` + `superagent-js`
 
 ---
