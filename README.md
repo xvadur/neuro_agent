@@ -23,10 +23,9 @@ This repository is the home of **Aethero_Xvadur**, a project dedicated to buildi
 - [OpenAI Cookbook](https://github.com/openai/openai-cookbook)
 - [Superagent framework](https://github.com/homanp/superagent)
 - [Superagent-js](https://github.com/homanp/superagent-js)
-- Pinecone / Chroma
+- Pinecone / Convex
 - Prisma + Postgres
 - React + Next.js
-- n8n / Pipedream
 
 ---
 
