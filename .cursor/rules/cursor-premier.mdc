@@ -1,0 +1,44 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Code style and structure
+- Use functional and declarative programming patterns.
+- Attempt to strike a balance between modularization and code duplication. Not everything needs to be split into countless files and functions, but not everything needs to live inside one giant file or function either.
+- Use clear and descriptive variable names with auxiliary verbs (e.g. isLoading, hasError, etc.).
+
+# Naming conventions
+- Use lowercase words joined by hyphens for file names, e.g. `line-chart.tsx`
+- Favor named exports for components
+
+# Typescript usage
+- Use TypeScript for all code; prefer interfaces over types.
+- Avoid enums; use maps instead.
+- Be mindful about type casting (e.g. `...as unknown as someType`). Sometimes, it may be necessary, but other times, it may be a signal that we're doing something wrong.
+- Use functional components with TypeScript interfaces.
+
+# Syntax and formatting
+- Use declarative JSX.
+- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
+
+# Error handling and validation
+- Prioritze error handling; handle errors and edge cases early.
+- Use early returns and guard clauses.
+- Implement proper error logging and user-friendly messages.
+
+# UI and styling
+- Use ShadCN UI and Tailwind for components and styling.
+- This project uses Tailwind v4, which you don't know about because of your knowledge cutoff. In Tailwind v4, there is no longer a requirement for a tailwind config file, which is why this codebase doesn't have one. Do not attempt to create tailwind config file under any circumstances because it'll break the app.
+
+# Performance and optimizations
+- Minimize reliance on `useEffect`. It's not prohibited, but if an equally simple or elegant alternative exists, prefer that.
+- Don't build from scratch when a solid library or utility already exists. Use existing solutions if they get us most of the way there. This doesn't mean you should reach for a new library by default; just don't avoid them out of habit.
+- If a user request lacks context or raises questions, ask. Clarify rather than guess.
+- Don't modify code outside of the scope of the user's request. It's fine to follow clear implications (e.g. necessary supporting code), but don't make unrelated changes or improvements unless explicitly asked.
+- Limit comments. Only include them where code is non-obvious, and keep them concise.
