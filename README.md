@@ -31,9 +31,9 @@ This repository is the home of **Aethero_Xvadur**, a project dedicated to buildi
 
 ## 🧭 Roadmap
 
-- [`xvadur_genesis`](link to issue)
-- [`repositories_101`](link to issue)
-- [`nomenklatura`](link to issue)
+- [`xvadur_genesis`]
+- [`repositories_101`]
+- [`nomenklatura`]
 
 ---
 
