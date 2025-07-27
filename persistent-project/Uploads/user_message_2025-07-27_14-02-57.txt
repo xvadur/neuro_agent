@@ -1,0 +1,386 @@
+Search files...
+Search files...
+Search files...
+## KOMPLEXNÝ EXPERTNÝ ROZBOR: KRITICKÉ SEKCII PROJEKTU
+
+**Kontext**: AI agent vytvoril funkčnú aplikáciu, ale identifikoval som kritické oblasti potrebujúce pozornosť.
+
+**Výkon**: Analýza odhalila 8 hlavných sekcií s vážnymi nedostatkami.
+
+---
+
+## 🚨 KRITICKÉ SEKCII POTREBUJÚCE OKAMŽITÚ POZORNOSŤ
+
+### **1. BEZPEČNOSTNÉ CHYBY (KRITICKÉ)**
+
+#### **Chýbajúce Environment Variables**:
+```bash
+# CHÝBAJÚCE SÚBORY:
+.env.local
+.env.example
+.env.production
+```
+
+#### **Bezpečnostné Nedostatky**:
+- ❌ **Žiadny rate limiting** - API endpoints sú zraniteľné
+- ❌ **Chýba input sanitization** - XSS zraniteľnosť
+- ❌ **Žiadne CORS nastavenia** - cross-origin útoky
+- ❌ **Chýba CSRF ochrana** - session hijacking
+
+### **2. VALIDÁCIA A SANITIZÁCIA (VYSOKÁ PRIORITA)**
+
+#### **API Endpoints**:
+```typescript
+// app/api/analyze/route.ts - CHYBAJÚCE VALIDÁCIE
+const { text } = await req.json()
+if (!text || typeof text !== 'string') {
+  // ❌ Žiadna sanitizácia, max length, content validation
+}
+```
+
+#### **Formuláre**:
+```typescript
+// app/auth/signup/page.tsx - ZÁKLADNÁ VALIDÁCIA
+if (formData.password.length < 6) {
+  // ❌ Chýba email validation, XSS protection
+}
+```
+
+### **3. ERROR HANDLING (STREDNÁ PRIORITA)**
+
+#### **Nedostatočné Error Handling**:
+```typescript
+// components/chat-interface.tsx
+catch (error) {
+  console.error('Analysis error:', error)
+  setIsLoading(false)
+  // ❌ Žiadne user-friendly error messages
+}
+```
+
+#### **API Error Responses**:
+```typescript
+// app/api/analyze/route.ts
+catch (error) {
+  console.error('API error:', error)
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  // ❌ Generické chyby, žiadne logging
+}
+```
+
+### **4. DATABÁZOVÁ OPTIMIZÁCIA (VYSOKÁ PRIORITA)**
+
+#### **Chýbajúce Indexy**:
+```sql
+-- prisma/schema.prisma
+model Report {
+  // ❌ Chýba index na timestamp pre rýchle vyhľadávanie
+  // ❌ Chýba full-text search index
+  // ❌ Žiadne soft delete
+}
+```
+
+#### **Connection Pooling**:
+```typescript
+// lib/db.ts
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+// ❌ Žiadne connection pooling nastavenia
+// ❌ Žiadne retry logic
+```
+
+### **5. PERFORMANCE OPTIMIZÁCIA (STREDNÁ PRIORITA)**
+
+#### **Streaming Issues**:
+```typescript
+// app/api/analyze-stream/route.ts
+// ❌ Žiadne timeout handling
+// ❌ Žiadne memory leak protection
+// ❌ Žiadne error recovery
+```
+
+#### **Frontend Performance**:
+```typescript
+// components/archive-sidebar.tsx
+// ❌ Žiadne pagination
+// ❌ Žiadne virtual scrolling
+// ❌ Žiadne caching
+```
+
+### **6. MONITORING A LOGGING (VYSOKÁ PRIORITA)**
+
+#### **Chýbajúce Logging**:
+```typescript
+// Všetky API routes
+console.error('API error:', error)
+// ❌ Žiadne structured logging
+// ❌ Žiadne error tracking (Sentry)
+// ❌ Žiadne performance monitoring
+```
+
+### **7. TESTING (KRITICKÁ PRIORITA)**
+
+#### **Žiadne Testy**:
+```
+// CHÝBAJÚCE SÚBORY:
+__tests__/
+jest.config.js
+cypress/
+playwright/
+```
+
+### **8. DEPLOYMENT A CI/CD (VYSOKÁ PRIORITA)**
+
+#### **Chýbajúce Konfigurácie**:
+```
+// CHÝBAJÚCE SÚBORY:
+.github/workflows/
+Dockerfile
+docker-compose.yml
+vercel.json
+```
+
+---
+
+## 📋 INŠTRUKCIE PRE AGENTA NA POKRAČOVANIE
+
+### **FÁZA 1: BEZPEČNOSŤ (KRITICKÁ)**
+
+#### **1.1 Environment Setup**:
+```bash
+# Vytvor .env.example
+DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+ABACUSAI_API_KEY="your_api_key"
+NEXTAUTH_SECRET="your_secret"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+#### **1.2 Rate Limiting**:
+```typescript
+// lib/rateLimit.ts
+import { NextRequest } from 'next/server'
+import { Redis } from '@upstash/redis'
+
+// Implementuj rate limiting pre API endpoints
+// Max 10 requests per minute per user
+```
+
+#### **1.3 Input Validation**:
+```typescript
+// lib/validation.ts
+import { z } from 'zod'
+
+export const textAnalysisSchema = z.object({
+  text: z.string().min(10).max(10000).trim()
+})
+
+export const userSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
+  name: z.string().min(2).max(50).optional()
+})
+```
+
+### **FÁZA 2: ERROR HANDLING**
+
+#### **2.1 Global Error Handler**:
+```typescript
+// lib/errorHandler.ts
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 500,
+    public isOperational = true
+  ) {
+    super(message)
+  }
+}
+
+export const handleError = (error: unknown) => {
+  // Structured error logging
+  // User-friendly error messages
+}
+```
+
+#### **2.2 API Error Responses**:
+```typescript
+// lib/apiResponse.ts
+export const createErrorResponse = (error: AppError) => {
+  return NextResponse.json({
+    error: error.message,
+    code: error.statusCode,
+    timestamp: new Date().toISOString()
+  }, { status: error.statusCode })
+}
+```
+
+### **FÁZA 3: DATABÁZOVÁ OPTIMIZÁCIA**
+
+#### **3.1 Schema Improvements**:
+```sql
+-- prisma/schema.prisma
+model Report {
+  id             String   @id @default(cuid())
+  userId         String
+  originalText   String   @db.Text
+  analysisResult Json
+  timestamp      DateTime @default(now())
+  isDeleted      Boolean  @default(false)  // Soft delete
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])  // Composite index
+  @@index([timestamp])          // Time-based queries
+}
+```
+
+#### **3.2 Connection Pooling**:
+```typescript
+// lib/db.ts
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  },
+  log: ['query', 'error', 'warn'],
+  errorFormat: 'pretty'
+})
+```
+
+### **FÁZA 4: MONITORING**
+
+#### **4.1 Logging Setup**:
+```typescript
+// lib/logger.ts
+import winston from 'winston'
+
+export const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+})
+```
+
+#### **4.2 Performance Monitoring**:
+```typescript
+// lib/monitoring.ts
+export const trackApiCall = async (name: string, fn: () => Promise<any>) => {
+  const start = Date.now()
+  try {
+    const result = await fn()
+    logger.info(`${name} completed in ${Date.now() - start}ms`)
+    return result
+  } catch (error) {
+    logger.error(`${name} failed after ${Date.now() - start}ms`, error)
+    throw error
+  }
+}
+```
+
+### **FÁZA 5: TESTING**
+
+#### **5.1 Unit Tests**:
+```typescript
+// __tests__/api/analyze.test.ts
+import { describe, it, expect } from '@jest/globals'
+import { POST } from '@/app/api/analyze/route'
+
+describe('Analyze API', () => {
+  it('should validate input text', async () => {
+    // Test validation
+  })
+  
+  it('should handle API errors gracefully', async () => {
+    // Test error handling
+  })
+})
+```
+
+#### **5.2 Integration Tests**:
+```typescript
+// __tests__/integration/auth.test.ts
+import { test, expect } from '@playwright/test'
+
+test('user can sign up and analyze text', async ({ page }) => {
+  // E2E test flow
+})
+```
+
+### **FÁZA 6: DEPLOYMENT**
+
+#### **6.1 Docker Setup**:
+```dockerfile
+# Dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+#### **6.2 CI/CD Pipeline**:
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: npm test
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Vercel
+        run: npx vercel --prod
+```
+
+---
+
+## 🎯 PRIORITIZÁCIA PRE AGENTA
+
+### **OKAMŽITÉ AKCIE (Týždeň 1)**:
+1. **Environment variables** - .env.local setup
+2. **Rate limiting** - API protection
+3. **Input validation** - Zod schemas
+4. **Error handling** - Global error handler
+
+### **KRÁTKOODOBÉ (Týždeň 2-3)**:
+1. **Database optimization** - Indexes, pooling
+2. **Logging** - Winston setup
+3. **Testing** - Jest + Playwright
+4. **Performance** - Caching, pagination
+
+### **DLOHODOBÉ (Mesiac 1-2)**:
+1. **Monitoring** - Sentry, analytics
+2. **CI/CD** - GitHub Actions
+3. **Documentation** - API docs
+4. **Security audit** - Penetration testing
+
+---
+
+## �� EXPERTNÉ ODPORÚČANIA
+
+### **Pre Junior Dev**:
+1. **Začni s bezpečnosťou** - je kritická
+2. **Použi TypeScript strict mode** - lepšia type safety
+3. **Implementuj TDD** - test-driven development
+4. **Dokumentuj API** - OpenAPI/Swagger
+
+### **Pre Produkciu**:
+1. **Backup stratégia** - automatické zálohovanie
+2. **Health checks** - monitoring endpoints
+3. **Graceful shutdown** - proper cleanup
+4. **Security headers** - helmet.js
+
+AI agent má **solídny základ**, ale potrebuje **systematické vylepšenia** pre produkčnú pripravenosť!

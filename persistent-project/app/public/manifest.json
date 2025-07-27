@@ -1,0 +1,35 @@
+
+{
+  "name": "Aethero Command Interface",
+  "short_name": "Aethero ACI",
+  "description": "Osobný operačný systém vedomia - PWA aplikácia pre hlbokú analýzu mindstreamu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["productivity", "lifestyle", "health"],
+  "shortcuts": [
+    {
+      "name": "Nová analýza",
+      "short_name": "Analýza",
+      "description": "Vytvorte novú analýzu mindstreamu",
+      "url": "/",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

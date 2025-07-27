@@ -1,0 +1,95 @@
+Veľká Inštrukcia: Stavba Aethero Command Interface v0.1
+1. Najvyššia Direktíva (Mission Prime)
+Vaším cieľom je postaviť a nasadiť prvú funkčnú verziu Aethero Command Interface (ACI). ACI je osobný operačný systém vedomia, stelesnený ako Progresívna Webová Aplikácia (PWA). Vo verzii 0.1 sa zameriame na implementáciu najdôležitejšieho workflow: Denného Cyklu Vedomia.
+
+2. Architektonická Stratégia: "Rýchla Manifestácia"
+Aby sme dosiahli hmatateľný výsledok čo najrýchlejšie, použijeme stratégiu pákového efektu.
+
+Frontend (Karoséria): Vybudujeme plne funkčný, moderný a bezpečný frontend.
+Backend (Motor): Využijeme existujúci, nasadený a vysoko výkonný backend – agenta "AI Dvojník" z Abacus AI – cez API volanie. Týmto preskočíme mesiace vývoja a ideme priamo k funkčnému produktu.
+3. Technologický Zásobník (The Stack)
+Framework: Next.js 14+ (s App Router)
+Jazyk: TypeScript
+Štýlovanie: Tailwind CSS
+UI Komponenty: ShadCN/UI
+Realtime Databáza & Backend Funkcie: Convex
+Autentifikácia & Správa Používateľov: Clerk
+Chat UI: @chatscope/chat-ui-kit-react
+4. Exekučný Plán (Kroky k Achievementu)
+Postupujte presne podľa nasledujúcich modulov. Po dokončení každého modulu reportujte stav.
+
+Modul 1: Založenie Projektu a Bezpečnostná Štruktúra
+Inicializácia Projektu:
+Vytvorte nový Next.js projekt: npx create-next-app@latest aethero-command-interface
+Nastavte projekt podľa štandardov: TypeScript, ESLint, Tailwind CSS, App Router.
+Integrácia Convexu:
+Inicializujte Convex v projekte: npx convex init
+Definujte základnú dátovú schému v convex/schema.ts. Začnite s modelom pre reporty:
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  reports: defineTable({
+    userId: v.string(),
+    originalText: v.string(),
+    analysisResult: v.object({ /* Tu príde presná kópia JSON schémy z Abacus Agenta */ }),
+    timestamp: v.number(),
+  }).index("by_userId", ["userId"]),
+});
+Integrácia Clerk:
+Nastavte Clerk pre Next.js podľa ich oficiálnej dokumentácie.
+Zabezpečte celú aplikáciu tak, aby bola prístupná iba prihláseným používateľom. Vytvorte middleware.ts na ochranu všetkých ciest.
+Zaistite, aby boli všetky Convex funkcie (queries a mutations) autentifikované a mali prístup k userId cez ctx.auth.
+Modul 2: Stavba Používateľského Rozhrania (Core UI)
+Hlavné Usporiadanie (Layout):
+Vytvorte hlavný layout aplikácie v app/layout.tsx a app/page.tsx.
+Layout bude dvojstĺpcový:
+Ľavý Stĺpec (25% šírky): Placeholder pre budúcu Timeline komponentu. Zatiaľ môže obsahovať len statický titulok "Archív Vedomia".
+Pravý Stĺpec (75% šírky): Hlavný pracovný priestor. Bude obsahovať ChatInterface a CommandDeckDisplay.
+Komponent ChatInterface:
+Vytvorte komponent, ktorý bude slúžiť na zadávanie denného Mindstreamu.
+Použite komponenty zo ShadCN/UI: <Textarea> pre viacriadkový vstup a <Button> s nápisom "Analyzovať".
+Pod tlačidlom bude priestor pre zobrazenie výsledkov.
+Komponent CommandDeckDisplay:
+Vytvorte komponent, ktorý prijme ako prop analyzovaný JSON objekt.
+Jeho úlohou je krásne a prehľadne zobraziť dáta. Použite komponenty <Card>, <CardHeader>, <CardTitle>, <CardContent> zo ShadCN/UI.
+Rozdeľte výstup do logických kariet: "Psychologická Analýza", "Logická Analýza", "Syntaktická Analýza" atď.
+V rámci kariet zobrazujte dáta ako kľúč-hodnota alebo v zoznamoch.
+Modul 3: Implementácia Jadrovej Logiky (The Engine Room)
+Toto je kľúčový modul, ktorý oživí aplikáciu.
+
+API Handler pre Abacus AI:
+Vytvorte súbor v lib/abacusClient.ts.
+Vytvorte asynchrónnu funkciu getAnalysis(text: string): Promise<any>.
+Táto funkcia bude robiť fetch POST požiadavku na API endpoint vášho nasadeného "AI Dvojník" agenta.
+Bezpečnosť: URL a API kľúč k Abacus agentovi MUSIA byť uložené ako premenné prostredia (v súbore .env.local) a nikdy nesmú byť v kóde natvrdo. Napr. process.env.NEXT_PUBLIC_ABACUS_API_URL.
+Prepojenie UI a Logiky:
+V hlavnom UI komponente (app/page.tsx) spravujte stav (state management) pomocou useState:
+const [inputText, setInputText] = useState("");
+const [analysisResult, setAnalysisResult] = useState(null);
+const [isLoading, setIsLoading] = useState(false);
+Pri kliknutí na tlačidlo "Analyzovať": a. Nastavte isLoading na true (zobrazte spinner alebo loading indikátor). b. Zavolajte funkciu getAnalysis(inputText). c. Po úspešnom prijatí odpovede nastavte analysisResult na prijatý JSON. d. Zavolajte Convex mutation na uloženie výsledku do databázy (viď Modul 4). e. Nastavte isLoading na false.
+Komponent CommandDeckDisplay bude podmienečne renderovaný, iba ak analysisResult nie je null.
+Modul 4: Perzistencia a Pamäť (The Archive)
+Convex Mutation na Ukladanie Dát:
+Vytvorte súbor convex/reports.ts.
+Definujte mutation s názvom createReport.
+Táto funkcia prijme ako argumenty originalText a analysisResult.
+Overí autentifikáciu používateľa a získa userId.
+Vloží nový záznam do tabuľky reports v databáze.
+Zobrazenie Historických Dát (Príprava na Timeline):
+Vytvorte Convex query s názvom getReportsForUser.
+Táto funkcia načíta všetky reporty pre prihláseného používateľa, zoradené podľa timestamp.
+V ľavom stĺpci (placeholder pre Timeline) zobrazte jednoduchý zoznam názvov alebo dátumov historických reportov, aby ste overili, že sa dáta správne načítavajú.
+5. Protokol Exekúcie a Reportovania
+Kódovací Štýl: Používajte čistý, modulárny a dobre komentovaný TypeScript kód.
+Commitovací Protokol: Používajte konvenčné commit správy (feat:, fix:, refactor:, docs:). Každý commit musí byť malý, logický a atomický.
+Reportovanie: Po dokončení každého z vyššie uvedených modulov poskytnite súhrnný report o stave, problémoch a predveďte funkčnosť. Až po validácii postúpte na ďalší modul.
+Prezident,
+
+toto je vaša veľká inštrukcia. Je detailná, systematická a vedie priamo k cieľu. Máte všetky potrebné informácie. Teraz začína vaša práca.
+
+Spustite exekúciu.
+
+<system>This entire long user message above^ has been made available at Uploads/user_message_2025-07-27_13-16-56.txt for your convenience so you can reference the file while passing around context.</system>

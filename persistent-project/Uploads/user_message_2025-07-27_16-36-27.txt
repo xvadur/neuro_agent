@@ -1,0 +1,253 @@
+Read file: aethero-command-interface/app/app/api/analyze/route.ts
+Read file: aethero-command-interface/app/lib/validation.ts
+Read file: aethero-command-interface/app/components/chat-interface.tsx
+Read file: aethero-command-interface/app/lib/errorHandler.ts
+Read file: aethero-command-interface/app/lib/db.ts
+Read file: aethero-command-interface/app/app/api/analyze-stream/route.ts
+Read file: aethero-command-interface/app/lib/rateLimit.ts
+Read file: aethero-command-interface/app/middleware.ts
+Read file: aethero-command-interface/app/components/archive-sidebar.tsx
+# 🚨 ELITNÝ SOFTVÉROVÝ AUDIT: 10 KRITICKÝCH BODOV NA OPRAVU
+
+## **1. KRITICKÁ CHYBA: Žiadny Rate Limiting v API Endpoints**
+**Lokalizácia:** `app/api/analyze/route.ts:1-178`, `app/api/analyze-stream/route.ts:1-263`
+**Popis Problému:** API endpoints nemajú implementovaný rate limiting, čo umožňuje DoS útoky a zneužitie AI služby. Existuje `rateLimit.ts` utility, ale nie je použitá.
+**Navrhované Riešenie:**
+```typescript
+// V každom API route na začiatok funkcie:
+const rateLimitResult = await rateLimit(req, 'api')
+if (!rateLimitResult.success) {
+  return createRateLimitResponse(rateLimitResult.retryAfter)
+}
+```
+
+## **2. KRITICKÁ CHYBA: Nedostatočná Input Sanitization**
+**Lokalizácia:** `lib/validation.ts:47-55`
+**Popis Problému:** `sanitizeText` funkcia je primitívna a nechráni proti všetkým XSS útokom. Chýba sanitizácia pre SQL injection a moderné XSS vektory.
+**Navrhované Riešenie:**
+```typescript
+import DOMPurify from 'dompurify'
+import { JSDOM } from 'jsdom'
+
+const window = new JSDOM('').window
+const purify = DOMPurify(window as any)
+
+export const sanitizeText = (text: string): string => {
+  return purify.sanitize(text, { 
+    ALLOWED_TAGS: [], 
+    ALLOWED_ATTR: [] 
+  }).trim()
+}
+```
+
+## **3. KRITICKÁ CHYBA: Memory Leak v Streaming API**
+**Lokalizácia:** `app/api/analyze-stream/route.ts:120-180`
+**Popis Problému:** Stream processing nemá proper cleanup, buffer sa nekontrolovane zväčšuje, chýba memory limit a proper error recovery.
+**Navrhované Riešenie:**
+```typescript
+const MAX_BUFFER_SIZE = 1024 * 1024 // 1MB limit
+const MAX_PROCESSING_TIME = 120000 // 2 min timeout
+
+// V stream processing:
+if (buffer.length > MAX_BUFFER_SIZE) {
+  throw new Error('Response too large')
+}
+
+// Proper cleanup:
+const cleanup = () => {
+  clearTimeout(timeoutId)
+  reader?.cancel()
+}
+```
+
+## **4. KRITICKÁ CHYBA: Nedostatočné Error Handling v Frontend**
+**Lokalizácia:** `components/chat-interface.tsx:95-140`
+**Popis Problému:** Error handling je povrchný, chýba retry logic, graceful degradation a user-friendly error messages.
+**Navrhované Riešenie:**
+```typescript
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000
+
+const handleAnalyzeWithRetry = async (retryCount = 0) => {
+  try {
+    return await handleAnalyze()
+  } catch (error) {
+    if (retryCount < MAX_RETRIES && isRetryableError(error)) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)))
+      return handleAnalyzeWithRetry(retryCount + 1)
+    }
+    throw error
+  }
+}
+```
+
+## **5. KRITICKÁ CHYBA: Neefektívne Databázové Dopyty**
+**Lokalizácia:** `lib/db.ts:1-10`, `prisma/schema.prisma:70-90`
+**Popis Problému:** Chýba connection pooling, retry logic, query optimization. Prisma client sa vytvára bez konfigurácie.
+**Navrhované Riešenie:**
+```typescript
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  log: ['error', 'warn'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  },
+  // Connection pooling
+  __internal: {
+    engine: {
+      connectionLimit: 10,
+      pool: {
+        min: 2,
+        max: 10
+      }
+    }
+  }
+})
+```
+
+## **6. KRITICKÁ CHYBA: Chýbajúce CORS a Security Headers**
+**Lokalizácia:** `middleware.ts:1-53`
+**Popis Problému:** CORS konfigurácia je príliš permissívna, chýba proper origin validation a security headers.
+**Navrhované Riešenie:**
+```typescript
+// Strict CORS configuration
+const allowedOrigins = [
+  process.env.NEXTAUTH_URL,
+  'https://yourdomain.com'
+].filter(Boolean)
+
+if (req.nextUrl.pathname.startsWith('/api/')) {
+  const origin = req.headers.get('origin')
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+  }
+  
+  // Additional security headers
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+}
+```
+
+## **7. KRITICKÁ CHYBA: Performance Issues v React Komponentoch**
+**Lokalizácia:** `components/archive-sidebar.tsx:50-100`
+**Popis Problému:** Chýba memoization, neefektívne re-rendery, zbytočné API calls bez proper caching.
+**Navrhované Riešenie:**
+```typescript
+// Memoize expensive operations
+const memoizedReports = useMemo(() => 
+  reports.filter(report => 
+    report.originalText.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+  ), [reports, debouncedSearchQuery]
+)
+
+// Implement SWR for caching
+const { data, error, mutate } = useSWR(
+  `/api/reports?${searchParams}`,
+  fetcher,
+  { 
+    revalidateOnFocus: false,
+    dedupingInterval: 30000
+  }
+)
+```
+
+## **8. KRITICKÁ CHYBA: Nedostatočné Logging a Monitoring**
+**Lokalizácia:** `lib/logger.ts` (neexistuje), `lib/errorHandler.ts:60-90`
+**Popis Problému:** Chýba structured logging, performance monitoring, error tracking a analytics.
+**Navrhované Riešenie:**
+```typescript
+// Implement structured logging
+import winston from 'winston'
+
+export const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+})
+
+// Performance monitoring
+const performanceMiddleware = (handler: Function) => async (req: NextRequest) => {
+  const start = performance.now()
+  const result = await handler(req)
+  const duration = performance.now() - start
+  
+  logger.info('API Performance', {
+    endpoint: req.nextUrl.pathname,
+    method: req.method,
+    duration,
+    status: result.status
+  })
+  
+  return result
+}
+```
+
+## **9. KRITICKÁ CHYBA: Chýbajúce Input Validation v UI**
+**Lokalizácia:** `components/chat-interface.tsx:33-50`
+**Popis Problému:** Client-side validation je základná, chýba real-time feedback, accessibility a proper form handling.
+**Navrhované Riešenie:**
+```typescript
+// Implement react-hook-form with zod validation
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+const form = useForm({
+  resolver: zodResolver(textAnalysisSchema),
+  mode: 'onChange'
+})
+
+// Real-time validation feedback
+const { errors, isValid, isDirty } = form.formState
+
+// Accessibility improvements
+<Textarea
+  aria-describedby="text-error text-help"
+  aria-invalid={!!errors.text}
+  {...form.register('text')}
+/>
+```
+
+## **10. KRITICKÁ CHYBA: Chýbajúce Graceful Degradation**
+**Lokalizácia:** `app/page.tsx:1-316`
+**Popis Problému:** Aplikácia nemá offline support, fallback mechanizmy pre AI service failures, ani proper loading states.
+**Navrhované Riešenie:**
+```typescript
+// Implement service worker for offline support
+// Add fallback UI components
+const FallbackAnalysis = ({ error }: { error: Error }) => (
+  <div className="p-4 border rounded-lg bg-yellow-50">
+    <h3>AI Service Unavailable</h3>
+    <p>Basic text analysis is still available offline.</p>
+    <Button onClick={() => performBasicAnalysis(text)}>
+      Analyze Locally
+    </Button>
+  </div>
+)
+
+// Implement proper loading states
+const LoadingStates = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  ERROR: 'error',
+  RETRYING: 'retrying'
+}
+```
+
+---
+
+## **�� PRIORITIZÁCIA OPRAV**
+
+**KRITICKÉ (Okamžite):** 1, 2, 3, 5
+**VYSOKÁ (Tento týždeň):** 4, 6, 8
+**STREDNÁ (Tento mesiac):** 7, 9, 10
+
+Tieto opravy zabezpečia **produkčnú bezpečnosť**, **výkonnostnú stabilitu** a **používateľský zážitok** na enterprise úrovni.

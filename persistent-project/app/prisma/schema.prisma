@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/aethero-command-interface/app/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("user") // user, admin
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  accounts      Account[]
+  sessions      Session[]
+  reports       Report[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, token])
+  @@index([expires])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  userId         String
+  originalText   String   @db.Text
+  analysisResult Json
+  textLength     Int      // Store text length for analytics
+  processingTime Int?     // Processing time in milliseconds
+  isDeleted      Boolean  @default(false) // Soft delete
+  deletedAt      DateTime?
+  timestamp      DateTime @default(now()) // Keep original field name for compatibility
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Composite indexes for efficient queries
+  @@index([userId, timestamp(sort: Desc)]) // Most common query pattern
+  @@index([timestamp(sort: Desc)]) // Time-based queries
+  @@index([userId, isDeleted]) // Active reports per user
+  @@index([isDeleted]) // Global soft delete filtering
+  @@index([textLength]) // Analytics queries
+}
+
+// New model for system monitoring and analytics
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   // error, warn, info, debug
+  message   String
+  context   Json?    // Additional context data
+  userId    String?  // Optional user association
+  sessionId String?  // Optional session tracking
+  ip        String?  // IP address for security events
+  userAgent String?  // User agent for security events
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// New model for API usage tracking
+model ApiUsage {
+  id         String   @id @default(cuid())
+  userId     String?
+  endpoint   String
+  method     String
+  statusCode Int
+  duration   Int      // Response time in milliseconds
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([endpoint])
+  @@index([createdAt(sort: Desc)])
+  @@index([statusCode])
+}
