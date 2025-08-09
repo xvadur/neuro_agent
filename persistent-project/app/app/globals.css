@@ -74,3 +74,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add some custom styles for the chat messages */
+@layer components {
+  .chat-message-user {
+    @apply bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200;
+  }
+  .chat-message-assistant {
+    @apply bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200;
+  }
+}
